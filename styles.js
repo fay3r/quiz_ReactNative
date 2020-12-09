@@ -57,5 +57,12 @@ export default {
     content:{
         flex:10
     },
-    text: { textAlign: 'center' }
+    text: { textAlign: 'center' },
+    font22:{fontSize: 16,
+    fontWeight:'bold'},
+    centerMode:{
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    border:{padding:2,borderWidth:1,}
 }
