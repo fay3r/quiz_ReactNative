@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, Component} from 'react';
 import {
     RefreshControl,
     Image,
@@ -15,109 +15,121 @@ import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 import {createDrawerNavigator, DrawerContentScrollView} from '@react-navigation/drawer';
 import styles from './styles';
-import test1 from './text_files/test1';
-import test2 from './text_files/test2';
-import test3 from './text_files/test3';
-import test4 from './text_files/test4';
 import SplashScreen from 'react-native-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CountDown from 'react-native-countdown-component';
 
-
-const DATA = [{
-    id: '1',
-    title: 'TEST1',
-    tag1: '#new3',
-    tag2: '#test3',
-    info: 'asfnjksdng;skrfghnertig;mlsd bhhufnajkgbdnfsk;gvmbdfuniopbshnbmjsdkfl;bhfnuiao;vmls;bmskfbs',
-}, {
-    id: '2',
-    title: 'TEST2',
-    tag1: '#new3',
-    tag2: '#test3',
-    info: 'asfnjksdng;skrfghnertig;mlsd bhhufnajkgbdnfsk;gvmbdfuniopbshnbmjsdkfl;bhfnuiao;vmls;bmskfbs',
-}, {
-    id: '3',
-    title: 'TEST3',
-    tag1: '#new3',
-    tag2: '#test3',
-    info: 'asfnjksdng;skrfghnertig;mlsd bhhufnajkgbdnfsk;gvmbdfuniopbshnbmjsdkfl;bhfnuiao;vmls;bmskfbs',
-}, {
-    id: '4',
-    title: 'TEST4',
-    tag1: '#new3',
-    tag2: '#test3',
-    info: 'asfnjksdng;skrfghnertig;mlsd bhhufnajkgbdnfsk;gvmbdfuniopbshnbmjsdkfl;bhfnuiao;vmls;bmskfbs',
-}];
-
-const testHolder = {
-    'TEST1': test1,
-    'TEST2': test2,
-    'TEST3': test3,
-    'TEST4': test4,
-};
-
-const scoreBoard = [];
 let playerScore = 0;
 const STORAGE_KEY = '@save_rule_status';
+const BASEURL = 'http://tgryl.pl/quiz/';
 
+class HomeScreen extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            testsList: [],
+        };
+    }
 
-function HomeScreen({navigation}) {
+    componentDidMount() {
+        fetch(BASEURL + 'tests')
+            .then((response) => response.json())
+            .then((json) => {
+                this.setState({testsList: json});
+            })
+            .catch((error) => console.error(error));
+    }
 
-    const renderItem = ({item}) => (
+    async getTestContent(id) {
+        return await fetch(BASEURL + 'test/' + id)
+            .then((response) => response.json())
+            .then((json) => {
+                return json;
+            })
+            .catch((error) => console.error(error));
+    }
 
-        <View style={styles.item}>
-            <TouchableOpacity onPress={() => navigation.navigate(item.title, {
-                name: item.title,
-                test: testHolder[item.title.toString()],
-                qnumber: 0,
-            })}>
-                <Text style={styles.title}>{item.title}</Text>
-                <View style={[{flexDirection: 'row'}]}>
-                    <Text style={styles.tags}>{item.tag1}</Text>
-                    <Text style={styles.tags}>{item.tag2}</Text>
-                </View>
-                <Text style={{fontSize: 12}}>{item.info}</Text>
-            </TouchableOpacity>
-        </View>
-    );
+    async goToTest(navigation, item) {
+        playerScore = 0;
+        const testContent = await this.getTestContent(item.id);
+        navigation.navigate(item.id, {
+            id: item.id,
+            testContent: testContent,
+            qnumber: 0,
+            lastquestion: item.numberOfTasks,
+        });
 
-    return (
+    }
 
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <View style={{flex: 1, marginLeft: 10}}>
-                    <TouchableOpacity onPress={() => navigation.openDrawer()}>
-                        <Image source={require('./png/more.png')}
-                               style={{height: 30, width: 30, alignSelf: 'flex-start', resizeMode: 'stretch'}}/>
-                    </TouchableOpacity>
-                </View>
-                <View style={[{flex: 13, alignItems: 'center'}]}>
-                    <Text style={[{fontSize: 22, fontWeight: 'bold'}]}>Strona Glowna</Text>
-                </View>
+    render() {
+        const testsList = this.state.testsList;
+        const navigation = this.props.navigation;
+        console.log(navigation);
+        let tests = 1;
+        const renderItem = ({item}) => (
+            <View style={styles.item}>
+                <TouchableOpacity onPress={() => {
+                    this.goToTest(navigation, item);
+                }}>
+                    <Text style={[styles.title,styles.langar]}>{item.name}</Text>
+                    <View style={[{flexDirection: 'row'}]}>
+                        {item.tags.map((el) => (
+                            <Text style={styles.tags}>{el}</Text>
+                        ))}
+                    </View>
+                    <Text style={[{fontSize: 12}]}>{item.description}</Text>
+                </TouchableOpacity>
             </View>
-            <View style={styles.content}>
-                <FlatList
-                    data={DATA}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.id}
-                    ListFooterComponent={
-                        <View style={[{flexDirection: 'column', allignItems: 'flex-end', height: 100}]}>
-                            <Text style={styles.footerText}>{'Poznaj swoja pozycje w rankingu'}</Text>
-                            <View style={[{flexDirection: 'column', alignSelf: 'center', height: 30, width: 100}]}>
-                                <Button title={'Ranking'} style={[{width: 20}]}
-                                        onPress={() => navigation.navigate('Rank')}/>
+        );
+        return (
+
+            <SafeAreaView style={styles.container}>
+                <View style={styles.header}>
+                    <View style={{flex: 1, marginLeft: 10}}>
+                        <TouchableOpacity onPress={() => {
+                            navigation.openDrawer();
+                        }}>
+                            <Image source={require('./png/more.png')}
+                                   style={{height: 30, width: 30, alignSelf: 'flex-start', resizeMode: 'stretch'}}/>
+                        </TouchableOpacity>
+                    </View>
+                    <View style={[{flex: 13, alignItems: 'center'}]}>
+                        <Text style={[{fontSize: 22, fontWeight: 'bold'}]}>Strona Glowna</Text>
+                    </View>
+                </View>
+                <View style={styles.content}>
+                    <FlatList
+                        data={testsList}
+                        renderItem={renderItem}
+                        keyExtractor={item => item.id}
+                        ListFooterComponent={
+                            <View style={[{flexDirection: 'column', allignItems: 'flex-end', height: 100}]}>
+                                <Text style={styles.footerText}>{'Poznaj swoja pozycje w rankingu'}</Text>
+                                <View style={[{flexDirection: 'column', alignSelf: 'center', height: 30, width: 100}]}>
+                                    <Button title={'Ranking'} style={[{width: 20}]}
+                                            onPress={() => navigation.navigate('Rank')}/>
+                                </View>
                             </View>
-                        </View>
-                    } ListFooterComponentStyle={styles.container2}/>
-            </View>
-        </SafeAreaView>
-    )
-        ;
+                        } ListFooterComponentStyle={styles.container2}/>
+                </View>
+            </SafeAreaView>
+        )
+            ;
+    }
 }
 
-function TestScreen({route, navigation}) {
-    const {name, test, qnumber} = route.params;
+function TestScreen({navigation, route}) {
+    const {id, testContent, qnumber, lastquestion} = route.params;
+    //const [testContent, setTestContent] = useState([]);
+
+    // useEffect(async () => {
+    //     fetch(BASEURL + 'test/' + id)
+    //         .then((response) => response.json())
+    //         .then((json) => setTestContent(json))
+    //         .catch((error) => console.error(error));
+    //
+    // }, []);
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
@@ -132,21 +144,29 @@ function TestScreen({route, navigation}) {
                                }}/></TouchableOpacity>
                 </View>
                 <View style={[{flex: 13, alignItems: 'center'}]}>
-                    <Text style={[{fontSize: 22, fontWeight: 'bold'}]}>{name}</Text>
+                    <Text style={[{fontSize: 20, fontWeight: 'bold'}]}>{testContent.name}</Text>
                 </View>
             </View>
             <View style={styles.content}>
-                {test.length > qnumber ? RenderQuestion(navigation, test, qnumber, name) : RenderFinalScore(navigation, name)}
+                {lastquestion > qnumber ? RenderQuestion(navigation, testContent, qnumber) : RenderFinalScore(navigation, testContent.name, testContent.tasks.length)}
 
             </View>
         </SafeAreaView>
     );
 }
 
-function RenderQuestion(navigation, test, qnumber, testname) {
-    const [key,setKey] = useState(0);
-    console.log('render pytanie' + test[qnumber].duration);
-    let time = test[qnumber].duration;
+function RenderQuestion(navigation, testContent, qnumber) {
+    const [key, setKey] = useState(0);
+    const [running, setRunning] = useState(true);
+
+    useEffect(() => {
+        setRunning(true);
+        return () => {
+            setRunning(false);
+        };
+    }, []);
+    let question = testContent.tasks[qnumber];
+    let time = testContent.tasks[qnumber].duration;
     return (
         <View style={[{flex: 1}]}>
             <View style={[{
@@ -155,105 +175,86 @@ function RenderQuestion(navigation, test, qnumber, testname) {
                 flexDirection: 'row',
                 alignItems: 'center',
             }]}>
-                <Text style={[{flex: 1, marginStart: 30}]}>Question {qnumber + 1} of {test.length}</Text>
-                <View style={[{paddingTop:20,paddingRight:10}]}>
+                <Text style={[{flex: 1, marginStart: 30}]}>Question {qnumber + 1} of {testContent.tasks.length}</Text>
+                <View style={[{paddingTop: 20, paddingRight: 10}]}>
                     <CountDown
                         key={key}
                         until={time}
                         size={15}
-                        onFinish={() =>{ if(alert('asdas')){ console.log('asfasdgsdfhdfh')}}}
+                        onFinish={() => {
+                            setKey(prevKey => prevKey + 1);
+                            NextQuestion(navigation, testContent, qnumber);
+                        }}
                         digitStyle={{backgroundColor: '#757575'}}
-                        digitTxtStyle={[{color: '#00b3ff',fontSize:15}]}
-                        timeToShow={[ 'S']}
-                        timeLabels={{ s: 'S'}}
+                        digitTxtStyle={[{color: '#00b3ff', fontSize: 15}]}
+                        timeToShow={['S']}
+                        timeLabels={{s: 'S'}}
+                        running={running}
 
                     />
                 </View>
             </View>
-            <View style={[{flex: 1, justifyContent: 'center', marginStart: 40, marginEnd: 70}]}>
-                <Text style={{alignSelf: 'center'}}>{test[qnumber].question}</Text>
+            <View style={[{flex: 4, justifyContent: 'center', marginStart: 40, marginEnd: 70}]}>
+                <Text style={[{alignSelf: 'center'},styles.opensansb]}>{testContent.tasks[qnumber].question}</Text>
             </View>
-            <View style={{flex: 3}}>
+            <View style={{flex: 9}}>
                 <View style={styles.answersBox}>
                     <View style={styles.answersRow}>
-                        <View>
-                            <Button title={test[qnumber].answers[0].content} style={styles.answers}
-                                    onPress={() => {
-                                        if (test[qnumber].answers[0].isCorrect) {
-                                            console.log('poprawna');
-                                            playerScore++;
-                                        }
-                                        console.log(playerScore);
-                                        NextQuestion(navigation, testname, qnumber);
-                                        setKey(prevKey => prevKey + 1)
-                                    }}></Button>
-                        </View>
-                        <View style={[{marginTop: 7}]}>
-                            <Button title={test[qnumber].answers[2].content}
-                                    style={[styles.answers, {padding: 12314125}]}
-                                    onPress={() => {
-                                        if (test[qnumber].answers[2].isCorrect) {
-                                            playerScore++;
-                                        }
-                                        NextQuestion(navigation, testname, qnumber);
-                                        setKey(prevKey => prevKey + 1)
-                                    }}></Button>
-                        </View>
+                        {question.answers.map((el) => (
+                                <View style={{marginTop: 15}}>
+                                    <Button title={el.content} style={styles.answers}
+                                            onPress={() => {
+                                                if (el.isCorrect) {
+                                                    console.log('poprawna');
+                                                    playerScore++;
+                                                }
+                                                NextQuestion(navigation, testContent, qnumber);
+                                                setKey(prevKey => prevKey + 1);
+
+                                            }}></Button>
+                                </View>
+                            ),
+                        )}
                     </View>
-                    <View style={styles.answersRow}>
-                        <View>
-                            <Button title={test[qnumber].answers[1].content} style={styles.answers}
-                                    onPress={() => {
-                                        if (test[qnumber].answers[1].isCorrect) {
-                                            playerScore++;
-                                        }
-                                        NextQuestion(navigation, testname, qnumber);
-                                        setKey(prevKey => prevKey + 1)
-                                    }}></Button>
-                        </View>
-                        <View style={[{marginTop: 7}]}>
-                            <Button title={test[qnumber].answers[3].content} style={styles.answers}
-                                    onPress={() => {
-                                        if (test[qnumber].answers[3].isCorrect) {
-                                            playerScore++;
-                                        }
-                                        NextQuestion(navigation, testname, qnumber);
-                                        setKey(prevKey => prevKey + 1)
-                                    }}></Button>
-                        </View></View>
                 </View>
             </View>
-            <View style={{flex: 8}}></View>
         </View>
     );
 }
 
 
-
-function NextQuestion(navigation, testName, questionNumber) {
-    if (questionNumber - 1 < test1.length) {
-        navigation.navigate(testName, {
-            name: testName,
-            question: test1[questionNumber + 1],
+function NextQuestion(navigation, testContent, questionNumber) {
+    if (questionNumber - 1 < testContent.tasks.length) {
+        navigation.navigate(testContent.id, {
+            id: testContent.id,
             qnumber: questionNumber + 1,
+            lastquestion: testContent.tasks.length,
         });
     }
 }
 
-function RenderFinalScore(navigation, testName) {
-    scoreBoard.push({
-        'nick': 'nicko',
-        'date': new Date().toISOString().slice(0, 10),
-        'score': playerScore,
-        'total': test1.length,
-        'type': testName,
-    });
-    playerScore = 0;
+function RenderFinalScore(navigation, testName, numberOfQuestions) {
+
+    fetch(BASEURL+ 'result',{
+        method: 'POST',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(
+            {
+                nick: "PS",
+                score: playerScore,
+                total: numberOfQuestions,
+                type: testName,
+            }
+        )
+    })
     return (
         <View style={[{flex: 1, alignItems: 'center'}]}>
             <Text style={[{marginTop: 4}]}>{'Nazwa: ' + testName}</Text>
-            <Text style={[{marginTop: 4}]}>{'Uzyskany wynik: ' + scoreBoard[scoreBoard.length - 1].score}</Text>
-            <Text style={[{marginTop: 4}]}>{'Możliwa liczba punktow: ' + test1.length}</Text>
+            <Text style={[{marginTop: 4}]}>{'Uzyskany wynik: ' + playerScore}</Text>
+            <Text style={[{marginTop: 4}]}>{'Możliwa liczba punktow: ' + numberOfQuestions}</Text>
             <Text style={[{marginTop: 4}]}>{'Data: ' + new Date().toISOString().slice(0, 10)}</Text>
             <View style={[{marginTop: 10}]}>
                 <Button title={'ranking'} onPress={() => navigation.navigate('Rank')}></Button>
@@ -265,11 +266,29 @@ function RenderFinalScore(navigation, testName) {
 
 function RankScreen({navigation}) {
     const [refreshing, setRefreshing] = useState(false);
+    const [rankScore, setRankScore] = useState([]);
+
+    useEffect(() => {
+        fetch(BASEURL + 'results')
+            .then((response) => response.json())
+            .then((json) => setRankScore(json.reverse()))
+            .catch((error) => console.error(error));
+
+        return () => {
+        };
+    }, []);
 
     const onRefresh = React.useCallback(() => {
         setRefreshing(true);
 
-        wait(100).then(() => setRefreshing(false));
+        wait(100).then(() => {
+            fetch(BASEURL + 'results')
+                .then((response) => response.json())
+                .then((json) => setRankScore(json.reverse()))
+                .catch((error) => console.error(error));
+            setRefreshing(false);
+            ToastAndroid.showWithGravity('Odswieżono!', ToastAndroid.SHORT, ToastAndroid.TOP);
+        });
     }, []);
 
     return (
@@ -310,7 +329,7 @@ function RankScreen({navigation}) {
                             style={[styles.centerMode, styles.border, {width: 100, backgroundColor: '#999999'}]}><Text
                             style={styles.font22}>Data</Text></TouchableOpacity>
                     </View>
-                    {createScoreBoard(scoreBoard)}
+                    {createScoreBoard(rankScore)}
                 </ScrollView>
             </View>
         </SafeAreaView>
@@ -330,14 +349,14 @@ function createScoreBoard(data) {
                 <Text style={[styles.border, {width: 80}]}>{item.nick}</Text>
                 <Text style={[styles.border, {width: 70}]}>{item.score + '/' + item.total}</Text>
                 <Text style={[styles.border, {width: 70}]}>{item.type}</Text>
-                <Text style={[styles.border, {width: 100}]}>{item.date}</Text>
+                <Text style={[styles.border, {width: 100}]}>{item.createdOn}</Text>
             </View>
         </View>
     );
     return (
         <SafeAreaView>
             <FlatList
-                data={scoreBoard}
+                data={data}
                 renderItem={renderItem}
             />
         </SafeAreaView>
@@ -352,8 +371,8 @@ function RulesScreen({navigation}) {
     }, []);
 
     if (accepted == true) {
-        ToastAndroid.showWithGravity('Witamy ponownie!', ToastAndroid.SHORT, ToastAndroid.TOP);
-        eval(navigation.navigate('Home'));
+        ToastAndroid.showWithGravity('Witamy!', ToastAndroid.SHORT, ToastAndroid.TOP);
+        navigation.navigate('Home');
     }
 
     const onAccept = async () => {
@@ -401,35 +420,62 @@ function RulesScreen({navigation}) {
 }
 
 function OwnDrawer({navigation}) {
-    useEffect(() =>{
-        SplashScreen.hide();
-    },[]);
+
+    const [testsList, setTestsList] = React.useState([]);
+    useEffect(() => {
+        fetch(BASEURL + 'tests')
+            .then((response) => response.json())
+            .then((json) => setTestsList(json))
+            .catch((error) => console.error(error));
+        return () => {
+        };
+    }, []);
+
+    const getTestContent= async(id) =>{
+
+        return await fetch(BASEURL + 'test/' + id)
+            .then((response) => response.json())
+            .then((json) => {
+                return json;
+            })
+            .catch((error) => console.error(error));
+    }
+
+    const goToTest=async(navigation, item) => {
+        playerScore = 0;
+        const testContent = await getTestContent(item.id);
+        navigation.navigate(item.id, {
+            id: item.id,
+            testContent: testContent,
+            qnumber: 0,
+            lastquestion: item.numberOfTasks,
+        });
+
+    }
+
     return (
         <DrawerContentScrollView>
             <View style={[{alignItems: 'center'}]}>
                 <View style={[{flex: 1}]}>
                     <Image source={require('./png/score.png')}
                            style={{height: 100, width: 120, alignSelf: 'center', resizeMode: 'stretch'}}/>
-                    <Text style={{marginTop: 10, fontSize: 22, fontWeight: 'bold'}}>Quizowanko</Text>
+                    <Text style={[{marginTop: 10, fontSize: 22},styles.langar]}>Quizowanko</Text>
                 </View>
                 <TouchableOpacity style={{marginTop: 10}} onPress={() => {
                     navigation.navigate('Home');
-                }}><Text>Strona Glowna</Text></TouchableOpacity>
+                }}><Text style={styles.opensansitalic}>Strona Glowna</Text></TouchableOpacity>
                 <TouchableOpacity style={{marginTop: 10}} onPress={() => {
                     navigation.navigate('Rank');
-                }}><Text>Ranking</Text></TouchableOpacity>
-                <TouchableOpacity style={{marginTop: 10}} onPress={() => {
-                    navigation.navigate('TEST1', {name: 'TEST1', question: test1[0], qnumber: 0});
-                }}><Text>Test1</Text></TouchableOpacity>
-                <TouchableOpacity style={{marginTop: 10}} onPress={() => {
-                    navigation.navigate('TEST2', {name: 'TEST2', question: test1[0], qnumber: 0});
-                }}><Text>Test2</Text></TouchableOpacity>
-                <TouchableOpacity style={{marginTop: 10}} onPress={() => {
-                    navigation.navigate('TEST3', {name: 'TEST3', question: test1[0], qnumber: 0});
-                }}><Text>Test3</Text></TouchableOpacity>
-                <TouchableOpacity style={{marginTop: 10}} onPress={() => {
-                    navigation.navigate('TEST4', {name: 'TEST4', question: test1[0], qnumber: 0});
-                }}><Text>Test4</Text></TouchableOpacity>
+                }}><Text style={styles.opensansitalic}>Ranking</Text></TouchableOpacity>
+                {
+                    testsList.map((el) => (
+
+                        <TouchableOpacity style={[{marginTop: 10}]} onPress={() => {
+                            goToTest(navigation, el)
+                        }
+                        }><Text style={styles.opensansitalic}>{el.name}</Text></TouchableOpacity>
+                    ))
+                }
             </View>
         </DrawerContentScrollView>
     );
@@ -437,20 +483,46 @@ function OwnDrawer({navigation}) {
 
 const Drawer = createDrawerNavigator();
 
-function App() {
-    return (
-        <NavigationContainer>
-            <Drawer.Navigator initialRouteName='Rules' drawerContent={(props) => <OwnDrawer {...props} />}>
-                <Drawer.Screen name='Rules' component={RulesScreen} options={{title: 'Regulamin'}}/>
-                <Drawer.Screen name='Home' component={HomeScreen} options={{title: 'Strona glowna'}}/>
-                <Drawer.Screen name='TEST1' component={TestScreen} options={{title: 'Test 1'}}/>
-                <Drawer.Screen name='TEST2' component={TestScreen} options={{title: 'Test 2'}}/>
-                <Drawer.Screen name='TEST3' component={TestScreen} options={{title: 'Test 3'}}/>
-                <Drawer.Screen name='TEST4' component={TestScreen} options={{title: 'Test 4'}}/>
-                <Drawer.Screen name='Rank' component={RankScreen} options={{title: 'Ranking'}}/>
-            </Drawer.Navigator>
-        </NavigationContainer>
-    );
+class App extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            testsList: [],
+        };
+    }
+
+    componentDidMount() {
+        fetch(BASEURL + 'tests')
+            .then((response) => {
+                return response.json();
+            })
+            .then((json) => {
+                console.log('json' + json);
+                this.setState({testsList: json});
+            })
+            .catch((error) => {
+                console.log(error);
+            });
+        SplashScreen.hide();
+    }
+
+    render() {
+        const testsList = this.state.testsList;
+        return (
+            <NavigationContainer>
+                <Drawer.Navigator initialRouteName='Rules' drawerContent={(props) => <OwnDrawer {...props} />}>
+                    <Drawer.Screen name='Rules' component={RulesScreen}/>
+                    <Drawer.Screen name='Home' component={HomeScreen}/>
+                    <Drawer.Screen name='Rank' component={RankScreen}/>
+                    {
+                        testsList.map(el => (
+                            <Drawer.Screen name={el.id} component={TestScreen}/>
+                        ))
+                    }
+                </Drawer.Navigator>
+            </NavigationContainer>
+        );
+    }
 }
 
 export default App;

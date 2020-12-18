@@ -15,12 +15,12 @@ export default {
         marginHorizontal: 16,
     },
     title: {
-        fontSize: 32,
+        fontSize: 24,
     },
     tags:{
         color:'blue',
         textDecorationLine: 'underline',
-        marginEnd:3,
+        marginEnd:15,
         paddingBottom:5
     },
     footerText:{
@@ -35,7 +35,7 @@ export default {
         width: '80%',
         marginTop:20,
         backgroundColor:'#d4d3d2',
-        marginBottom: 50
+        marginBottom: 20
 
     },
     answersRow:{
@@ -64,5 +64,9 @@ export default {
         justifyContent: 'center',
         alignItems: 'center'
     },
-    border:{padding:2,borderWidth:1,}
+    border:{padding:2,borderWidth:1,},
+    opensansb:{fontFamily:'OpenSans-Bold'},
+    opensansitalic:{fontFamily:'OpenSans-BoldItalic'},
+    raleway:{fontFamily: 'Raleway-VariableFont_wght',fontWeight: 'Black'},
+    langar:{fontFamily: 'Langar-Regular'}
 }
