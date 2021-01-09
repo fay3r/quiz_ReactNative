@@ -62,7 +62,8 @@ export default {
     fontWeight:'bold'},
     centerMode:{
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+
     },
     border:{padding:2,borderWidth:1,},
     opensansb:{fontFamily:'OpenSans-Bold'},
