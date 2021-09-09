@@ -52,7 +52,8 @@ export default {
         flex:1,
         backgroundColor:'#999999',
         flexDirection:'row',
-        alignItems:'center'
+        alignItems:'center',
+        height:40,
     },
     content:{
         flex:10
